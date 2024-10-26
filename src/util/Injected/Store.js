@@ -90,6 +90,8 @@ exports.ExposeStore = () => {
     window.Store.LidUtils = window.require('WAWebApiContact');
     window.Store.WidToJid = window.require('WAWebWidToJid');
     window.Store.JidToWid = window.require('WAWebJidToWid');
+    window.Store.Chat.getChatByMsg = window.require('WAWebFrontendMsgGetters').getChat;
+    window.Store.KeepUnkeepMsg = window.require('WAWebKeepInChatMsgAction');
     window.Store.getMsgInfo = window.require('WAWebApiMessageInfoStore').queryMsgInfo;
     window.Store.pinUnpinMsg = window.require('WAWebSendPinMessageAction').sendPinInChatMsg;
     window.Store.QueryExist = window.require('WAWebQueryExistsJob').queryWidExists;
@@ -99,13 +101,22 @@ exports.ExposeStore = () => {
     window.Store.BotProfiles = window.require('WAWebBotProfileCollection');
     window.Store.DeviceList = window.require('WAWebApiDeviceList');
     window.Store.HistorySync = window.require('WAWebSendNonMessageDataRequest');
-    if (window.compareWwebVersions(window.Debug.VERSION, '>=', '2.3000.1014111620')) 
+    if (window.compareWwebVersions(window.Debug.VERSION, '>=', '2.3000.1014111620'))
         window.Store.AddonReactionTable = window.require('WAWebAddonReactionTableMode').reactionTableMode;
     
     window.Store.ForwardUtils = {
         ...window.require('WAWebForwardMessagesToChat')
     };
-
+    window.Store.MessageGetter = {
+        ...window.require('WAWebMsgModel'),
+        ...window.require('WAWebDBMsgUtils'),
+        ...window.require('WAWebDBMessageSerialization')
+    };
+    window.Store.EphemeralFields = {
+        ...window.require('WAWebGetEphemeralFieldsMsgActionsUtils'),
+        ...window.require('WAWebChatEphemerality'),
+        ...window.require('WAWebChangeEphemeralDurationChatAction')
+    };
     window.Store.StickerTools = {
         ...window.require('WAWebImageUtils'),
         ...window.require('WAWebAddWebpMetadata')
@@ -114,7 +125,9 @@ exports.ExposeStore = () => {
         ...window.require('WAWebGroupCreateJob'),
         ...window.require('WAWebGroupModifyInfoJob'),
         ...window.require('WAWebExitGroupAction'),
-        ...window.require('WAWebContactProfilePicThumbBridge')
+        ...window.require('WAWebContactProfilePicThumbBridge'),
+        ...window.require('WAWebContactProfilePicThumbBridge'),
+        ...window.require('WAWebReportToAdminJob')
     };
     window.Store.GroupParticipants = {
         ...window.require('WAWebModifyParticipantsGroupAction'),
@@ -165,4 +178,5 @@ exports.ExposeStore = () => {
 
     window.injectToFunction({ module: 'WAWebE2EProtoUtils', function: 'typeAttributeFromProtobuf' }, (func, ...args) => { const [proto] = args; return proto.locationMessage || proto.groupInviteMessage ? 'text' : func(...args); });
 
+    window.injectToFunction({ module: 'shouldSkipGenMsg', function: 'shouldSkipGenMsg' }, () => false);
 };

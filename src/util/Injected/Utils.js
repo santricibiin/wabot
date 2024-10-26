@@ -454,11 +454,15 @@ exports.LoadUtils = () => {
         res.isGroup = chat.isGroup;
         res.formattedTitle = chat.formattedTitle;
         res.isMuted = chat.mute && chat.mute.isMuted;
+        res.ephemeralDuration = window.Store.EphemeralFields.getEphemeralFields(chat).ephemeralDuration;
 
         if (chat.groupMetadata) {
-            const chatWid = window.Store.WidFactory.createWid((chat.id._serialized));
+            const chatWid = window.Store.WidFactory.createWid(chat.id._serialized);
             await window.Store.GroupMetadata.update(chatWid);
             res.groupMetadata = chat.groupMetadata.serialize();
+            res.groupMetadata.iAmAdmin = chat.groupMetadata.participants.iAmAdmin();
+            res.groupMetadata.iAmSuperAdmin = chat.groupMetadata.participants.iAmSuperAdmin();
+            res.groupMetadata.iAmMember = chat.groupMetadata.participants.iAmMember();
         }
         
         res.lastMessage = null;
@@ -1005,6 +1009,23 @@ exports.LoadUtils = () => {
         } catch (err) {
             return [];
         }
+    };
+
+    window.WWebJS.keepUnkeepMessage = async (msgId, action, options = {}) => {
+        const msg = window.Store.Msg.get(msgId);
+        if (!msg) return false;
+        
+        const chat = window.Store.Chat.getChatByMsg(msg);
+        const isMessageExpirationModeOn = window.Store.EphemeralFields.getEphemeralSetting(chat) > 0;
+        if (!isMessageExpirationModeOn) return false;
+
+        const toKeepMsg = action === 'Keep';
+        const { deleteExpired = true } = options;
+
+        const response = toKeepMsg
+            ? await window.Store.KeepUnkeepMsg.keepMessage(msg, 3)
+            : await window.Store.KeepUnkeepMsg.undoKeepMessage(msg, { deleteExpired }, 3);
+        return response.messageSendResult === 'OK';
     };
 
     window.WWebJS.pinUnpinMsgAction = async (msgId, action, duration) => {
